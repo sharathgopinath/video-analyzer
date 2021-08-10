@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: "AWS::Serverless-2016-10-31"
+Description: video-analyzer
+
+Parameters:
+  BranchName:
+    Type: String
+    Description: Name of the branch.
+
+Conditions:
+  IsProd: !Equals [!Ref BranchName, 'main']
+
+Resources:
+  RingVideoQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-ring-video
+      VisibilityTimeout: 1800
+
+  RingVideoSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt RingVideoQueue.Arn
+      TopicArn: !ImportValue ring-downloader-sns-arn
+      RawMessageDelivery: 'true'
+
+  AnalyzerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 
+        !If [ IsProd, 'video-analyzer', !Sub 'video-analyzer-${BranchName}' ]
+      Description: Analyzes videos
+      Runtime: python3.8
+      CodeUri: ./packages/
+      Handler: init.lambda_handler
+      MemorySize: 128
+      Timeout: 300
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !ImportValue ring-downloader-s3bucket-name
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt RingVideoQueue.Arn
+            BatchSize: 10
+            
+      Environment:
+        Variables:
+          BUCKET_NAME: !ImportValue ring-downloader-s3bucket-name
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AnalyzerFunction}"
+      RetentionInDays: 14
+
+  ErrorMetric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref LogGroup
+      FilterPattern: "ERROR"
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: !Sub ${AWS::StackName}
+          MetricName: "ErrorCount"
+
+  ErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Alarm if errors are over the threshold limit"
+      Namespace: !Sub ${AWS::StackName}
+      AlarmName: !Sub ${AWS::StackName}-ErrorAlarm
+      MetricName: "ErrorCount"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Threshold: 1
+      Period: 60
+      Statistic: "Sum"
