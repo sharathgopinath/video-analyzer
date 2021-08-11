@@ -17,6 +17,25 @@ Resources:
       QueueName: !Sub ${AWS::StackName}-ring-video
       VisibilityTimeout: 1800
 
+  RingVideoQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref RingVideoQueue
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+          - Sid: !Sub ${AWS::StackName}-sns-sendmessage
+            Effect: Allow
+            Principal: 
+              AWS: "*"
+            Action:
+            - sqs:SendMessage
+            Resource: !GetAtt RingVideoQueue.Arn
+            Condition:
+             ArnEquals:
+              aws:SourceArn: !ImportValue ring-downloader-sns-arn
+
   RingVideoSubscription:
     Type: AWS::SNS::Subscription
     Properties:
