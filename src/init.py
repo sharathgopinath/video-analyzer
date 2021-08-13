@@ -1,6 +1,7 @@
 import logging
 import sys
 import json
+from rekognition_video import(RekognitionVideo)
 
 logger = logging.getLogger()
 
@@ -14,7 +15,7 @@ def lambda_handler(event, context):
 
         bucket_name = body['Records'][0]['s3']['bucket']['name']
         object_key = body['Records'][0]['s3']['object']['key']
-        logger.info(f"FilePath: {bucket_name}/{object_key}")
+        print(f"FilePath: {bucket_name}/{object_key}")
 
 def setLogger():
     stdout_handler = logging.StreamHandler(sys.stdout)

@@ -42,7 +42,45 @@ Resources:
       Protocol: sqs
       Endpoint: !GetAtt RingVideoQueue.Arn
       TopicArn: !ImportValue ring-downloader-sns-arn
-      RawMessageDelivery: 'true'
+      RawMessageDelivery: true
+
+  RekognitionJobTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-rekognition-job-topic
+
+  RekognitionJobQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-rekognition-job
+      VisibilityTimeout: 120
+
+  RekognitionJobSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      TopicArn: !Ref RekognitionJobTopic
+      Endpoint: !GetAtt RekognitionJobQueue.Arn
+      RawMessageDelivery: true
+
+  RekognitionJobQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref RekognitionJobQueue
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+          - Sid: !Sub ${AWS::StackName}-sns-sendmessage-rekognition
+            Effect: Allow
+            Principal: 
+              AWS: "*"
+            Action:
+            - sqs:SendMessage
+            Resource: !GetAtt RekognitionJobQueue.Arn
+            Condition:
+             ArnEquals:
+              aws:SourceArn: !Ref RekognitionJobTopic
 
   AnalyzerFunction:
     Type: AWS::Serverless::Function
@@ -63,11 +101,16 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt RingVideoQueue.Arn
-            BatchSize: 10
-            
+            BatchSize: 10         
       Environment:
         Variables:
           BUCKET_NAME: !ImportValue ring-downloader-s3bucket-name
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt RekognitionJobTopic.TopicName
+        - SQSPollerPolicy:
+            QueueName: 
+              !GetAtt RekognitionJobQueue.QueueName
 
   LogGroup:
     Type: AWS::Logs::LogGroup
