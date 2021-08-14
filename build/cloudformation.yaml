@@ -82,6 +82,34 @@ Resources:
              ArnEquals:
               aws:SourceArn: !Ref RekognitionJobTopic
 
+  RekognitionIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-rekognition-iam-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "rekognition.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+
+  RekognitionIAMPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties: 
+      PolicyName: !Sub ${AWS::StackName}-rekognition-iam-policy
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Action: "SNS:Publish"
+            Resource: !Ref RekognitionJobTopic
+      Roles: 
+        - Ref: "RekognitionIAMRole"
+
   AnalyzerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -93,24 +121,41 @@ Resources:
       Handler: init.lambda_handler
       MemorySize: 128
       Timeout: 300
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !ImportValue ring-downloader-s3bucket-name
       Events:
         SQSEvent:
           Type: SQS
           Properties:
             Queue: !GetAtt RingVideoQueue.Arn
-            BatchSize: 10         
-      Environment:
-        Variables:
-          BUCKET_NAME: !ImportValue ring-downloader-s3bucket-name
+            BatchSize: 10
       Policies:
+        - S3ReadPolicy:
+            BucketName: !ImportValue ring-downloader-s3bucket-name
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt RekognitionJobTopic.TopicName
         - SQSPollerPolicy:
             QueueName: 
               !GetAtt RekognitionJobQueue.QueueName
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - rekognition:StartLabelDetection
+                - rekognition:GetLabelDetection
+              Resource: "*"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - iam:GetRole
+                - iam:PassRole
+              Resource: !GetAtt RekognitionIAMRole.Arn
+
+      Environment:
+        Variables:
+          BUCKET_NAME: !ImportValue ring-downloader-s3bucket-name
+          JOB_QUEUE_URL: !Ref RekognitionJobQueue
+          JOB_TOPIC_ARN: !Ref RekognitionJobTopic
+          JOB_ROLE_ARN: !GetAtt RekognitionIAMRole.Arn
 
   LogGroup:
     Type: AWS::Logs::LogGroup
