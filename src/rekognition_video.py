@@ -65,7 +65,7 @@ class RekognitionVideo:
             if messages:
                 message = json.loads(messages[0].body)
                 if job_id != message['JobId']:
-                    raise RuntimeError
+                    continue
                 status = message['Status']
                 logger.info("Got message %s with status %s.", message['JobId'], status)
                 messages[0].delete()
