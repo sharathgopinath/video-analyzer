@@ -121,6 +121,7 @@ Resources:
       Handler: init.lambda_handler
       MemorySize: 128
       Timeout: 300
+      ReservedConcurrentExecutions: 1
       Events:
         SQSEvent:
           Type: SQS

@@ -1,7 +1,6 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 import json
 from pprint import pprint
 import boto3
@@ -13,8 +12,6 @@ from rekognition_objects import (
 job_queue_url = os.environ.get("JOB_QUEUE_URL")
 job_topic_arn = os.environ.get("JOB_TOPIC_ARN")
 job_role_arn = os.environ.get("JOB_ROLE_ARN")
-
-logger = logging.getLogger(__name__)
 
 class RekognitionVideo:
     """
@@ -61,13 +58,13 @@ class RekognitionVideo:
         while not job_done:
             messages = self.queue.receive_messages(
                 MaxNumberOfMessages=1, WaitTimeSeconds=5)
-            logger.info("Polled queue for messages, got %s.", len(messages))
+            print("Polled queue for messages, got %s.", len(messages))
             if messages:
                 message = json.loads(messages[0].body)
                 if job_id != message['JobId']:
-                    raise RuntimeError
+                    continue
                 status = message['Status']
-                logger.info("Got message %s with status %s.", message['JobId'], status)
+                print("Got message %s with status %s.", message['JobId'], status)
                 messages[0].delete()
                 job_done = True
         return status
@@ -85,10 +82,10 @@ class RekognitionVideo:
             response = start_job_func(
                 Video=self.video, NotificationChannel=self.get_notification_channel())
             job_id = response['JobId']
-            logger.info(
+            print(
                 "Started %s job %s on %s.", job_description, job_id, self.video_name)
         except ClientError:
-            logger.exception(
+            print(
                 "Couldn't start %s job on %s.", job_description, self.video_name)
             raise
         else:
@@ -108,11 +105,11 @@ class RekognitionVideo:
         """
         try:
             response = get_results_func(JobId=job_id)
-            logger.info("Job %s has status: %s.", job_id, response['JobStatus'])
+            print("Job %s has status: %s.", job_id, response['JobStatus'])
             results = result_extractor(response)
-            logger.info("Found %s items in %s.", len(results), self.video_name)
+            print("Found %s items in %s.", len(results), self.video_name)
         except ClientError:
-            logger.exception("Couldn't get items for %s.", job_id)
+            print("Couldn't get items for %s.", job_id)
             raise
         else:
             return results
