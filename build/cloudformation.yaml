@@ -136,6 +136,8 @@ Resources:
         - SQSPollerPolicy:
             QueueName: 
               !GetAtt RekognitionJobQueue.QueueName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DDBTable
         - Version: "2012-10-17"
           Statement:
             - Effect: Allow
@@ -157,6 +159,23 @@ Resources:
           JOB_QUEUE_URL: !Ref RekognitionJobQueue
           JOB_TOPIC_ARN: !Ref RekognitionJobTopic
           JOB_ROLE_ARN: !GetAtt RekognitionIAMRole.Arn
+          TABLE_NAME: !Ref DDBTable
+
+  DDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      TableName: !Sub ${AWS::StackName}
+      KeySchema:
+        - AttributeName: "PK"
+          KeyType: "HASH"
+        - AttributeName: "SK"
+          KeyType: "RANGE"
+      AttributeDefinitions:
+        - AttributeName: "PK"
+          AttributeType: "S"
+        - AttributeName: "SK"
+          AttributeType: "S"
 
   LogGroup:
     Type: AWS::Logs::LogGroup

@@ -1,16 +1,23 @@
 import json
-from pprint import pprint
+from typing import List
 import boto3
+import os
+import datetime
+from decimal import Decimal
+from rekognition_objects import RekognitionLabel
 from rekognition_video import(RekognitionVideo)
+
+table_name = os.environ.get("TABLE_NAME")
 
 def lambda_handler(event, context):
     print(f"Received {len(event['Records'])} messages.")
-    for record in event['Records']:
-        body = json.loads(record['body'])
+    for record in event["Records"]:
+        body = json.loads(record["body"])
         print(body)
 
-        bucket_name = body['bucket_name']
-        file_name = body['file_name']
+        bucket_name = body["bucket_name"]
+        file_name = body["file_name"]
+        cam_name = body["cam_name"]
         print(f"FilePath: {bucket_name}/{file_name}")
 
         # Analyze video
@@ -18,10 +25,44 @@ def lambda_handler(event, context):
         video = RekognitionVideo.from_bucket(bucket_name, file_name, rekognition_client)
         print("Detecting labels in the video.")
         labels = video.do_label_detection()
-        print(f"Detected {len(labels)} labels, here are the first twenty:")
-        for label in labels[:20]:
-            pprint(label.to_dict())
 
+        save(labels,cam_name)
+
+def save(labels: List[RekognitionLabel], cam_name: str):
+    dynamodb = boto3.resource("dynamodb")
+    table = dynamodb.Table(table_name)
+    print (f"Saving {len(labels)} labels")
+
+    todays_date = datetime.date.today()
+
+    for label in labels:
+        pk_1 = f"label:{label.name}:{todays_date.year}"
+        sk_1 = f"{todays_date.month}:{todays_date.day}:{cam_name}"
+        pk_2 = f"label:{todays_date.year}"
+        sk_2 = f"{todays_date.month}:{todays_date.day}"
+
+        table.update_item(
+            Key = {
+                "PK": pk_1,
+                "SK": sk_1
+            },
+            UpdateExpression="SET analysis_response = list_append(if_not_exists(analysis_response, :empty_list), :vals)",
+            ExpressionAttributeValues={
+                ":vals": [json.loads(json.dumps(label.__dict__), parse_float=Decimal)],
+                ":empty_list":[]
+            }
+        )
+        # table.update_item(
+        #     Key = {
+        #         "PK": pk_2,
+        #         "SK": sk_2
+        #     },
+        #     UpdateExpression="SET label_names = list_append(if_not_exists(label_names, :empty_list), :vals)",
+        #     ExpressionAttributeValues={
+        #         ":vals": [label.name],
+        #         ":empty_list":[]
+        #     }
+        )
 
 # if __name__ == "__main__":
 #     lambda_handler(None, None)
