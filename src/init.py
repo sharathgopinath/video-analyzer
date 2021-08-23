@@ -35,11 +35,25 @@ def save(labels: List[RekognitionLabel], cam_name: str):
 
     todays_date = datetime.date.today()
 
+    unique_labels = set([label.name for label in labels])
+    label_pk = f"label:{todays_date.year}"
+    label_sk = f"{todays_date.month}:{todays_date.day}"
+    response = table.get_item(Key = { "PK": label_pk, "SK": label_sk })
+    if ("Item" in response):
+        existing_labels = response["Item"]["label_names"]
+        unique_labels = set(existing_labels + unique_labels)
+
+    table.update_item(
+        Key = { "PK": label_pk, "SK": label_sk },
+        UpdateExpression = "SET label_names = :vals",
+        ExpressionAttributeValues = {
+            ":vals": unique_labels
+        }
+    )
+
     for label in labels:
         pk_1 = f"label:{label.name}:{todays_date.year}"
         sk_1 = f"{todays_date.month}:{todays_date.day}:{cam_name}"
-        pk_2 = f"label:{todays_date.year}"
-        sk_2 = f"{todays_date.month}:{todays_date.day}"
 
         table.update_item(
             Key = {
@@ -51,17 +65,6 @@ def save(labels: List[RekognitionLabel], cam_name: str):
                 ":vals": [json.loads(json.dumps(label.__dict__), parse_float=Decimal)],
                 ":empty_list":[]
             }
-        )
-        # table.update_item(
-        #     Key = {
-        #         "PK": pk_2,
-        #         "SK": sk_2
-        #     },
-        #     UpdateExpression="SET label_names = list_append(if_not_exists(label_names, :empty_list), :vals)",
-        #     ExpressionAttributeValues={
-        #         ":vals": [label.name],
-        #         ":empty_list":[]
-        #     }
         )
 
 # if __name__ == "__main__":
