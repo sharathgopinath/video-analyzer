@@ -41,7 +41,7 @@ def save(labels: List[RekognitionLabel], cam_name: str):
     response = table.get_item(Key = { "PK": label_pk, "SK": label_sk })
     if ("Item" in response):
         existing_labels = set(response["Item"]["label_names"])
-        unique_labels = set(existing_labels + unique_labels)
+        unique_labels = existing_labels.union(unique_labels)
 
     table.update_item(
         Key = { "PK": label_pk, "SK": label_sk },
