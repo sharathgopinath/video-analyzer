@@ -40,7 +40,7 @@ def save(labels: List[RekognitionLabel], cam_name: str):
     label_sk = f"{todays_date.month}:{todays_date.day}"
     response = table.get_item(Key = { "PK": label_pk, "SK": label_sk })
     if ("Item" in response):
-        existing_labels = response["Item"]["label_names"]
+        existing_labels = set(response["Item"]["label_names"])
         unique_labels = set(existing_labels + unique_labels)
 
     table.update_item(
