@@ -51,11 +51,9 @@ def save(labels: List[RekognitionLabel], cam_name: str, file_name: str):
         }
     )
 
-    file_id = file_name.replace(cam_name, "")
-
     for label in labels:
         pk_1 = f"label:{label.name}:{todays_date.year}"
-        sk_1 = f"{todays_date.month}:{todays_date.day}:{cam_name}:{file_id}"
+        sk_1 = f"{todays_date.month}:{todays_date.day}:{cam_name}"
 
         table.update_item(
             Key = {
@@ -63,7 +61,6 @@ def save(labels: List[RekognitionLabel], cam_name: str, file_name: str):
                 "SK": sk_1
             },
             UpdateExpression="SET analysis_response = list_append(if_not_exists(analysis_response, :empty_list), :vals)",
-            ConditionExpression="attribute_not_exists(PK) and attribute_not_exists(SK)",
             ExpressionAttributeValues={
                 ":vals": [json.loads(json.dumps(label.__dict__), parse_float=Decimal)],
                 ":empty_list":[]
