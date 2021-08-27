@@ -26,9 +26,9 @@ def lambda_handler(event, context):
         print("Detecting labels in the video.")
         labels = video.do_label_detection()
 
-        save(labels,cam_name)
+        save(labels, cam_name, file_name)
 
-def save(labels: List[RekognitionLabel], cam_name: str):
+def save(labels: List[RekognitionLabel], cam_name: str, file_name: str):
     dynamodb = boto3.resource("dynamodb")
     table = dynamodb.Table(table_name)
     print (f"Saving {len(labels)} labels")
@@ -51,9 +51,11 @@ def save(labels: List[RekognitionLabel], cam_name: str):
         }
     )
 
+    file_id = file_name.replace(cam_name, "")
+
     for label in labels:
         pk_1 = f"label:{label.name}:{todays_date.year}"
-        sk_1 = f"{todays_date.month}:{todays_date.day}:{cam_name}"
+        sk_1 = f"{todays_date.month}:{todays_date.day}:{cam_name}:{file_id}"
 
         table.update_item(
             Key = {
@@ -61,6 +63,7 @@ def save(labels: List[RekognitionLabel], cam_name: str):
                 "SK": sk_1
             },
             UpdateExpression="SET analysis_response = list_append(if_not_exists(analysis_response, :empty_list), :vals)",
+            ConditionExpression="attribute_not_exists(PK) and attribute_not_exists(SK)",
             ExpressionAttributeValues={
                 ":vals": [json.loads(json.dumps(label.__dict__), parse_float=Decimal)],
                 ":empty_list":[]
