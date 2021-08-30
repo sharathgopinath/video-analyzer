@@ -26,9 +26,9 @@ def lambda_handler(event, context):
         print("Detecting labels in the video.")
         labels = video.do_label_detection()
 
-        save(labels, cam_name, file_name)
+        save(labels, cam_name)
 
-def save(labels: List[RekognitionLabel], cam_name: str, file_name: str):
+def save(labels: List[RekognitionLabel], cam_name: str):
     dynamodb = boto3.resource("dynamodb")
     table = dynamodb.Table(table_name)
     print (f"Saving {len(labels)} labels")
