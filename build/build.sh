@@ -10,7 +10,7 @@ echo "Create package..."
 mkdir ./packages || true
 
 cp -a ../src/. ./packages
-pip install -r requirements.txt -t ./packages
+pip install -r ../requirements.txt -t ./packages
 
 aws cloudformation package \
     --template-file="./cloudformation.yaml" \

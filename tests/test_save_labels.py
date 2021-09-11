@@ -1,14 +1,13 @@
 import datetime
 from typing import List
+from video_analyzer.init import save
 from infrastructure.setup import *
-from rekognition_objects import *
-from rekognition_video import *
-from init import *
+from video_analyzer.rekognition_objects import RekognitionLabel
 
-from rekognition_objects import RekognitionLabel
+TestContext.__test__ = False
 
 def test_saves_labels():
-    setup_dynamodb()
+    test_context = TestContext()
 
     labels:List[RekognitionLabel] = [
         RekognitionLabel({
@@ -18,6 +17,5 @@ def test_saves_labels():
             "Parents": []
         }, datetime.date.today())
     ]
-
-    save(labels, "test_cam")
     
+    save(test_context.boto3_session, labels, "test_cam")

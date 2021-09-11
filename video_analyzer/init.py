@@ -1,11 +1,12 @@
 import json
 from typing import List
-import boto3
 import os
 import datetime
 from decimal import Decimal
-from rekognition_objects import RekognitionLabel
-from rekognition_video import(RekognitionVideo)
+
+from video_analyzer.rekognition_objects import RekognitionLabel
+from video_analyzer.rekognition_video import(RekognitionVideo)
+from video_analyzer.boto3_session import Boto3Session
 
 table_name = os.environ.get("TABLE_NAME")
 
@@ -21,16 +22,20 @@ def lambda_handler(event, context):
         print(f"FilePath: {bucket_name}/{file_name}")
 
         # Analyze video
-        rekognition_client = boto3.client("rekognition")
+        boto3_session = Boto3Session()
+        rekognition_client = boto3_session.get_client("rekognition")
         video = RekognitionVideo.from_bucket(bucket_name, file_name, rekognition_client)
         print("Detecting labels in the video.")
         labels = video.do_label_detection()
 
-        save(labels, cam_name)
+        save(boto3_session, labels, cam_name)
 
-def save(labels: List[RekognitionLabel], cam_name: str):
-    dynamodb = boto3.resource("dynamodb")
-    table = dynamodb.Table(table_name)
+def save(boto3_session: Boto3Session, labels: List[RekognitionLabel], cam_name: str):
+    dynamodb = boto3_session.get_client("dynamodb")
+    if (dynamodb is not None):
+        print(table_name)
+        return
+
     print (f"Saving {len(labels)} labels")
 
     todays_date = datetime.date.today()
@@ -38,12 +43,13 @@ def save(labels: List[RekognitionLabel], cam_name: str):
     unique_labels = set([label.name for label in labels])
     label_pk = f"label:{todays_date.year}"
     label_sk = f"{todays_date.month}:{todays_date.day}"
-    response = table.get_item(Key = { "PK": label_pk, "SK": label_sk })
+    response = dynamodb.get_item(TableName=table_name, Key = { "PK": label_pk, "SK": label_sk })
     if ("Item" in response):
         existing_labels = set(response["Item"]["label_names"])
         unique_labels = existing_labels.union(unique_labels)
 
-    table.update_item(
+    dynamodb.update_item(
+        TableName=table_name,
         Key = { "PK": label_pk, "SK": label_sk },
         UpdateExpression = "SET label_names = :vals",
         ExpressionAttributeValues = {
@@ -55,7 +61,8 @@ def save(labels: List[RekognitionLabel], cam_name: str):
         pk_1 = f"label:{label.name}:{todays_date.year}"
         sk_1 = f"{todays_date.month}:{todays_date.day}:{cam_name}"
 
-        table.update_item(
+        dynamodb.update_item(
+            TableName=table_name,
             Key = {
                 "PK": pk_1,
                 "SK": sk_1
@@ -68,4 +75,4 @@ def save(labels: List[RekognitionLabel], cam_name: str):
         )
 
 # if __name__ == "__main__":
-#     lambda_handler(None, None)
+    # lambda_handler(None, None)
