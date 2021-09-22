@@ -1,4 +1,4 @@
-from video_analyzer.aws_settings import AWSSettings
+from video_analyzer.settings.aws_settings import AWSSettings
 import boto3
 
 class Boto3Session:

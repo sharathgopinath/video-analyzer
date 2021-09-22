@@ -12,6 +12,11 @@ mkdir ./packages || true
 cp -a ../src/. ./packages
 pip install -r ../requirements.txt -t ./packages
 
+echo "Running tests..."
+pip install ..
+PYTHONPATH=".."
+pytest ..
+
 aws cloudformation package \
     --template-file="./cloudformation.yaml" \
     --output-template-file="./package.yaml" \

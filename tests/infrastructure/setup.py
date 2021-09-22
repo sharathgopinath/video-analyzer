@@ -1,7 +1,7 @@
-from video_analyzer.aws_settings import AWSSettings
+from video_analyzer.settings.dynamodb_settings import DynamoDbSettings
+from video_analyzer.settings.aws_settings import AWSSettings
 import botocore
-from botocore import config
-from video_analyzer.boto3_session import Boto3Session
+from video_analyzer.settings.boto3_session import Boto3Session
 
 aws_access_key_id=""
 aws_secret_access_key=""
@@ -21,6 +21,7 @@ class TestContext:
                 config=CONFIG
             )
         )
+        self.dynamoDbSettings = DynamoDbSettings(table_name)
         self.initialize()
 
     def initialize(self):
@@ -29,7 +30,7 @@ class TestContext:
     def setup_dynamodb(self):
         dynamodb_client = self.boto3_session.get_client("dynamodb")
         existing_tables = dynamodb_client.list_tables()['TableNames']
-        if (table_name not in existing_tables):
+        if (table_name in existing_tables):
             print(f"Table {table_name} already exists")
             return
 
