@@ -5,17 +5,39 @@ set -euxo pipefail
 
 project="video-analyzer"
 
+cleanup() {
+    echo "Cleaning up ..."
+    docker-compose \
+      -p ${project} \
+      -f ../docker-compose.tests.yml \
+      -f ../docker-compose.yml down \
+      --remove-orphans || true
+      
+    docker stop $(docker ps -a -q) || true
+    docker rm $(docker ps -a -q) || true
+    docker image rm "${project}:${GIT_SHA}" || true
+}
+
 echo "Create package..."
 
 mkdir ./packages || true
 
-cp -a ../src/. ./packages
+cp -a ../video_analyzer/. ./packages
 pip install -r ../requirements.txt -t ./packages
 
+cleanup
+
 echo "Running tests..."
-pip install ..
-PYTHONPATH=".."
-pytest ..
+docker-compose -f ../docker-compose.yml -f ../docker-compose.tests.yml pull
+docker-compose \
+  -p ${project} \
+  -f ../docker-compose.yml  \
+  -f ../docker-compose.tests.yml \
+  up \
+  --build --force-recreate --remove-orphans \
+  --exit-code-from tests \
+  --abort-on-container-exit \
+  tests
 
 aws cloudformation package \
     --template-file="./cloudformation.yaml" \

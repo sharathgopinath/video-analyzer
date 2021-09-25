@@ -2,13 +2,19 @@ from video_analyzer.settings.dynamodb_settings import DynamoDbSettings
 from video_analyzer.settings.aws_settings import AWSSettings
 import botocore
 from video_analyzer.settings.boto3_session import Boto3Session
+import os
 
-aws_access_key_id=""
-aws_secret_access_key=""
+if "LOCALSTACK_HOST" in os.environ:
+    localstack_host = os.environ.get("LOCALSTACK_HOST")
+else:
+    localstack_host = "localhost"
+
+aws_access_key_id="123"
+aws_secret_access_key="123"
 region_name="ap-southeast-2"
-endpoint_url='http://localhost:4566'
+endpoint_url=f"http://{localstack_host}:4566"
 table_name="video-analyzer-test"
-CONFIG = botocore.config.Config(retries={'max_attempts': 5})
+CONFIG = botocore.config.Config(retries={'total_max_attempts': 10})
 
 class TestContext:
     def __init__(self):
