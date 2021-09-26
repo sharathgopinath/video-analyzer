@@ -118,7 +118,7 @@ Resources:
       Description: Analyzes videos
       Runtime: python3.8
       CodeUri: ./packages/
-      Handler: init.lambda_handler
+      Handler: video_analyzer.function.lambda_handler
       MemorySize: 128
       Timeout: 300
       ReservedConcurrentExecutions: 1

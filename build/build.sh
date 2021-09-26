@@ -22,8 +22,8 @@ echo "Create package..."
 
 mkdir ./packages || true
 
-cp -a ../video_analyzer/. ./packages
-pip install -r ../requirements.txt -t ./packages
+cp -a ../video_analyzer/. ./packages/video_analyzer
+pip install -r ../requirements.txt -t ./packages/video_analyzer
 
 cleanup
 

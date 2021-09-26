@@ -13,4 +13,4 @@ def lambda_handler(event, context):
         message_handler.handle(message)
 
 # if __name__ == "__main__":
-    # lambda_handler(None, None)
+#     lambda_handler(None, None)

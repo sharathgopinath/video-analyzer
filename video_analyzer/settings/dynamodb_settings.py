@@ -2,4 +2,7 @@ import os
 
 class DynamoDbSettings:
     def __init__(self, table_name:str = None):
-        self.table_name = table_name if not None else os.environ.get("TABLE_NAME")
+        if table_name is not None:
+            self.table_name = table_name
+        else:
+            self.table_name = os.environ.get("TABLE_NAME")
