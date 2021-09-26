@@ -62,3 +62,8 @@ The dynamodb is designed for the following access patterns -
 docker-compose up -d
 python3 -m pytest
 ```
+
+## References
+* https://docs.aws.amazon.com/code-samples/latest/catalog/code-catalog-python-example_code-rekognition.html
+* https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
+* https://www.alexdebrie.com/posts/dynamodb-single-table/
