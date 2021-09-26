@@ -28,19 +28,15 @@ class TestContext:
             )
         )
         self.dynamoDbSettings = DynamoDbSettings(table_name)
+        self.dynamodb_client = self.boto3_session.get_client("dynamodb")
         self.initialize()
 
     def initialize(self):
+        self.cleanup_dynamodb()
         self.setup_dynamodb()
 
     def setup_dynamodb(self):
-        dynamodb_client = self.boto3_session.get_client("dynamodb")
-        existing_tables = dynamodb_client.list_tables()['TableNames']
-        if (table_name in existing_tables):
-            print(f"Table {table_name} already exists")
-            return
-
-        dynamodb_client.create_table(
+        self.dynamodb_client.create_table(
             AttributeDefinitions=[
                 {
                     "AttributeName": "PK",
@@ -66,23 +62,7 @@ class TestContext:
         )
     
     def cleanup_dynamodb(self):
-        dynamodb_client = self.boto3_session.get_client("dynamodb")
-        dynamodb_client.delete_table(TableName=table_name)
-
-
-# def get_boto3_client(aws_service: str):
-#     return boto3.client(
-#         service_name=aws_service,
-#         endpoint_url=endpoint_url,
-#         region_name=region_name,
-#         aws_access_key_id=aws_access_key_id,
-#         aws_secret_access_key=aws_secret_access_key,
-#         config=CONFIG)
-
-# def setup_test_context():
-#     os.environ["TABLE_NAME"] = table_name
-#     setup_dynamodb()
-
-# def cleanup_dynamodb():
-#     dynamodb_client = get_boto3_client("dynamodb")
-#     dynamodb_client.delete_table(TableName=table_name)
+        try:
+            self.dynamodb_client.delete_table(TableName=table_name)
+        except Exception as ex:
+            print(ex)
