@@ -6,7 +6,7 @@ from pprint import pprint
 import boto3
 import os
 from botocore.exceptions import ClientError
-from rekognition_objects import (
+from video_analyzer.rekognition_objects import (
     RekognitionFace, RekognitionLabel, RekognitionPerson)
 
 job_queue_url = os.environ.get("JOB_QUEUE_URL")
