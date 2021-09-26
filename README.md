@@ -1,13 +1,15 @@
 # video-analyzer
 Analyzes video files using [Amazon's Rekognition](https://aws.amazon.com/rekognition/) and saves results in [DynamoDb](https://aws.amazon.com/dynamodb/). Currently the app only does [label detection](https://docs.aws.amazon.com/rekognition/latest/dg/labels.html).
 
-The video-analyzer is a lambda function that is triggered by an sqs message from [ring-downloader](https://github.com/sharathgopinath/ring-downloader) containing the s3 file path of the video that is to be analyzed. A Rekognition job is then triggered which runs asynchronously, the results of the job are published on an sns topic, the video-analyzer polls on this topic, once the results are available it is saved in dynamodb.
+The video-analyzer is a lambda function that is triggered by an sqs message from [ring-downloader](https://github.com/sharathgopinath/ring-downloader) containing the s3 file path of the video that is to be analyzed. An asynchronous Rekognition job is then triggered and the results published on an sns topic which is polled by video-analyzer. Once the results are available it is saved in dynamodb.
+
+<img src=".img/architecture.png" width="700">
+
+## Access patterns
 
 The dynamodb is designed for the following access patterns - 
 * Retrieve label names for a given year / month / day
 * Retrive properties of specific labels for a given year / month / day 
-
-<img src=".img/architecture.png" width="700">
 
 ## Sample analysis data
 ### Label names
