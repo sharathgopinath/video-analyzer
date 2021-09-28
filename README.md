@@ -1,15 +1,19 @@
 # video-analyzer
-Analyzes video files using [Amazon's Rekognition](https://aws.amazon.com/rekognition/) and saves results in [DynamoDb](https://aws.amazon.com/dynamodb/). Currently the app only does [label detection](https://docs.aws.amazon.com/rekognition/latest/dg/labels.html).
+This service analyzes videos captured from Ring doorbell / Spotlight camera to detect objects, people, animals and gives a confidence score for its accuracy. The analysis makes use of [Amazon's Rekognition](https://aws.amazon.com/rekognition/) service which performs [label detection](https://docs.aws.amazon.com/rekognition/latest/dg/labels.html) on the video.
 
-The video-analyzer is a lambda function that is triggered by an sqs message from [ring-downloader](https://github.com/sharathgopinath/ring-downloader) containing the s3 file path of the video that is to be analyzed. An asynchronous Rekognition job is then triggered and the results published on an sns topic which is polled by video-analyzer. Once the results are available it is saved in dynamodb.
+Some of the data that can be retreived based on this analysis are - (subject to the confidence score of the analysis and the position of your Ring camera)
+* No. of times a person / bird / car is detected on your driveway in a day / month / year
+* No. of days it has rained in a month / year (based on "Water" label detected in videos)
+
+The Ring videos are downloaded by the [ring-downloader](https://github.com/sharathgopinath/ring-downloader) and stored into an S3 bucket, from where this video analyzer picks it up for its analysis.
 
 <img src=".img/architecture.png" width="700">
 
-## Access patterns
+## Data access patterns
 
-The dynamodb is designed for the following access patterns - 
-* Retrieve label names for a given year / month / day
-* Retrive properties of specific labels for a given year / month / day 
+The analysis data is stored in a dynamodb table which is designed for the following access patterns - 
+* Retrieve all label names for a given year / month / day
+* Retrieve properties of specific labels for a given year / month / day 
 
 ## Sample analysis data
 ### Label names
@@ -66,6 +70,7 @@ python3 -m pytest
 ```
 
 ## References
+* https://docs.aws.amazon.com/rekognition/latest/dg/how-it-works.html
 * https://docs.aws.amazon.com/code-samples/latest/catalog/code-catalog-python-example_code-rekognition.html
 * https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 * https://www.alexdebrie.com/posts/dynamodb-single-table/
