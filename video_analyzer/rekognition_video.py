@@ -57,7 +57,7 @@ class RekognitionVideo:
         job_done = False
         while not job_done:
             messages = self.queue.receive_messages(
-                MaxNumberOfMessages=1, WaitTimeSeconds=40)
+                MaxNumberOfMessages=1, WaitTimeSeconds=20)
             print("Polled queue for messages, got %s.", len(messages))
             if messages:
                 message = json.loads(messages[0].body)

@@ -53,7 +53,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Sub ${AWS::StackName}-rekognition-job
-      VisibilityTimeout: 240
+      VisibilityTimeout: 120
 
   RekognitionJobSubscription:
     Type: AWS::SNS::Subscription

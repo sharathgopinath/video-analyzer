@@ -6,7 +6,7 @@ from video_analyzer.rekognition_objects import RekognitionFace
 from video_analyzer.rekognition_video import RekognitionVideo
 from video_analyzer.settings.boto3_session import Boto3Session
 from video_analyzer.settings.dynamodb_settings import DynamoDbSettings
-from boto3.dynamodb.types import TypeSerializer
+from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 
 
 class MessageHandler:
@@ -28,8 +28,9 @@ class MessageHandler:
         video_source_pk = f"video_source:{todays_date.year}:{todays_date.month}"
         response = dynamodb.get_item(TableName=self.dynamoDbSettings.table_name, Key = { "PK": {"S":video_source_pk}, "SK": {"S":"0"} })
         file_names = []
+        typeSerializer = TypeDeserializer()
         if ("Item" in response):
-            file_names = response["Item"]["file_names"]
+            file_names = typeSerializer.deserialize(response["Item"]["file_names"])
         
         if(file_name in file_names):
             print(f"File {file_name} already processed, skipping.")
@@ -45,7 +46,8 @@ class MessageHandler:
 
         self.save_labels(labels, cam_name)
 
-        self.save_video_source(self, file_names, video_source_pk, dynamodb)
+        self.save_video_source(file_names, video_source_pk, dynamodb)
+        print("Saved successfully")
 
     def save_labels(self, labels: List[RekognitionFace], cam_name: str):
         dynamodb = self.boto3_session.get_client("dynamodb")
