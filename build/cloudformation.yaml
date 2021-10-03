@@ -176,6 +176,9 @@ Resources:
           AttributeType: "S"
         - AttributeName: "SK"
           AttributeType: "S"
+      TimeToLiveSpecification:
+        AttributeName: "TTL"
+        Enabled: true
 
   LogGroup:
     Type: AWS::Logs::LogGroup
