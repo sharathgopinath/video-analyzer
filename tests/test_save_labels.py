@@ -28,8 +28,8 @@ def test_saves_labels():
         })
     ]
     
-    message_handler = MessageHandler(test_context.dynamoDbSettings)
-    message_handler.save(test_context.boto3_session, labels, "test_cam")
+    message_handler = MessageHandler(test_context.dynamoDbSettings, test_context.boto3_session)
+    message_handler.save_labels(labels, "test_cam")
 
     todays_date = datetime.date.today()
     label_pk = f"label:{todays_date.year}"

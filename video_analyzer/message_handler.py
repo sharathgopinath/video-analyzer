@@ -10,8 +10,12 @@ from boto3.dynamodb.types import TypeSerializer
 
 
 class MessageHandler:
-    def __init__(self, dynamoDbSettings: DynamoDbSettings):
+    def __init__(self, dynamoDbSettings: DynamoDbSettings, boto3_session: Boto3Session):
         self.dynamoDbSettings = dynamoDbSettings
+        if (boto3_session is not None):
+            self.boto3_session = boto3_session
+        else:
+            self.boto3_session = Boto3Session()
 
     def handle(self, message):
         bucket_name = message["bucket_name"]
@@ -19,17 +23,32 @@ class MessageHandler:
         cam_name = message["cam_name"]
         print(f"FilePath: {bucket_name}/{file_name}")
 
+        dynamodb = self.boto3_session.get_client("dynamodb")
+        todays_date = datetime.date.today()
+        video_source_pk = f"video_source:{todays_date.year}:{todays_date.month}"
+        response = dynamodb.get_item(TableName=self.dynamoDbSettings.table_name, Key = { "PK": {"S":video_source_pk} })
+        file_names = []
+        if ("Item" in response):
+            file_names = response["Item"]["file_names"]
+        
+        if(file_name in file_names):
+            print(f"File {file_name} already processed, skipping.")
+            return
+
+        file_names.append(file_name)
+
         # Analyze video
-        boto3_session = Boto3Session()
-        rekognition_client = boto3_session.get_client("rekognition")
+        rekognition_client = self.boto3_session.get_client("rekognition")
         video = RekognitionVideo.from_bucket(bucket_name, file_name, rekognition_client)
         print("Detecting labels in the video.")
         labels = video.do_label_detection()
 
-        self.save(boto3_session, labels, cam_name)
+        self.save_labels(labels, cam_name)
 
-    def save(self, boto3_session: Boto3Session, labels: List[RekognitionFace], cam_name: str):
-        dynamodb = boto3_session.get_client("dynamodb")
+        self.save_video_source(self, file_names, video_source_pk, dynamodb)
+
+    def save_labels(self, labels: List[RekognitionFace], cam_name: str):
+        dynamodb = self.boto3_session.get_client("dynamodb")
         table_name = self.dynamoDbSettings.table_name
         typeSerializer = TypeSerializer()
         
@@ -70,3 +89,12 @@ class MessageHandler:
                     ":empty_list":typeSerializer.serialize([])
                 }
             )
+
+    def save_video_source(self, file_names:List[str], video_source_pk:str, dynamodb):
+        typeSerializer = TypeSerializer()
+        dynamodb.put_item(
+            TableName = self.dynamoDbSettings.table_name,
+            Item = {
+                "PK":  {"S":video_source_pk },
+                "file_names": typeSerializer.serialize(file_names)
+            })
