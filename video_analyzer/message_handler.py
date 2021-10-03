@@ -10,7 +10,7 @@ from boto3.dynamodb.types import TypeSerializer
 
 
 class MessageHandler:
-    def __init__(self, dynamoDbSettings: DynamoDbSettings, boto3_session: Boto3Session):
+    def __init__(self, dynamoDbSettings: DynamoDbSettings, boto3_session: Boto3Session = None):
         self.dynamoDbSettings = dynamoDbSettings
         if (boto3_session is not None):
             self.boto3_session = boto3_session
@@ -26,7 +26,7 @@ class MessageHandler:
         dynamodb = self.boto3_session.get_client("dynamodb")
         todays_date = datetime.date.today()
         video_source_pk = f"video_source:{todays_date.year}:{todays_date.month}"
-        response = dynamodb.get_item(TableName=self.dynamoDbSettings.table_name, Key = { "PK": {"S":video_source_pk} })
+        response = dynamodb.get_item(TableName=self.dynamoDbSettings.table_name, Key = { "PK": {"S":video_source_pk}, "SK": {"S":"0"} })
         file_names = []
         if ("Item" in response):
             file_names = response["Item"]["file_names"]
@@ -96,5 +96,7 @@ class MessageHandler:
             TableName = self.dynamoDbSettings.table_name,
             Item = {
                 "PK":  {"S":video_source_pk },
-                "file_names": typeSerializer.serialize(file_names)
+                "SK": {"S": "0"},
+                "file_names": typeSerializer.serialize(file_names),
+                "TTL": { "N": "604800" } # 1 week
             })
